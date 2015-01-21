@@ -24,6 +24,7 @@ class ring
 {
 	public:
 		ring(); 
+		ring(vector<double> X, vector<double> Y); 
 		virtual ~ring() {}
 
 		double RFindX (double X1, double Y1, double X2, double Y2, double X3, double Y3);
@@ -36,7 +37,6 @@ class ring
 		double GetY() {return Yrec;}
 
 	protected:
-		TH3D *HoughF;
 		double Rrec;
 		double Xrec;
 		double Yrec;

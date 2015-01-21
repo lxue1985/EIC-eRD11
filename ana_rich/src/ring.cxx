@@ -15,7 +15,17 @@
 
 ring::ring()
 {
-	HoughF = new TH3D ("HoughF","HoughF",88,-44.,44.,88,-44,44,50,0,50);
+	Rrec = -999.;
+	Xrec = -999.;
+	Yrec = -999.;
+}
+
+ring::ring(vector<double> X, vector<double> Y)
+{
+	Rrec = -999.;
+	Xrec = -999.;
+	Yrec = -999.;
+	FindARing(X,Y);
 }
 
 void ring::FindARing(vector<double> X, vector<double> Y)
@@ -37,7 +47,7 @@ void ring::FindARing(vector<double> X, vector<double> Y)
 	PseudoPoints.clear();
 
 	/// Forming J1,J2,J3,J4 
-	if(X.size()!=Y.size()) return;
+	if( !X.size() || X.size()!=Y.size()) return;
 	for(unsigned int i=0; i<X.size(); i++){
 		if(X[i]<0. && Y[i]<0.) {
 			X1.push_back(X[i]);
@@ -69,6 +79,7 @@ void ring::FindARing(vector<double> X, vector<double> Y)
 		"\t J3 PseudoPoints size: "<<J3_PseudoPoints.size()<<
 		"\t J4 PseudoPoints size: "<<J4_PseudoPoints.size()<<endl;
 
+	TH3D *HoughF = new TH3D ("HoughF","HoughF",88,-44.,44.,88,-44,44,50,0,50);
 	HoughF->Reset();
 	//Selecting 3 PseudoPoints in three different quadrants:
 	//J1,J2,J3:
@@ -190,6 +201,8 @@ void ring::FindARing(vector<double> X, vector<double> Y)
 
 	TAxis *zaxis = HoughF->GetZaxis();
 	Rrec=zaxis->GetBinCenter(zbin);
+
+	delete HoughF;
 
 	return;
 }

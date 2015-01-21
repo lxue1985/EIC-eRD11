@@ -58,8 +58,8 @@ int main(int argc, char **argv)
 
 	const double DEG=180./3.1415926;
 	bool use_SbKCs=true;
-	bool use_GaAsP=false;
-	bool use_GaAs=false;
+	bool use_GaAsP=true;
+	bool use_GaAs=true;
 
 	char fspace[256];
 	sprintf(fspace,"%s",FileOutput);
@@ -145,15 +145,29 @@ int main(int argc, char **argv)
 
 		fhit->GetEntry(i);
 
-		std::vector<double> X;
-		std::vector<double> Y;
-		X.clear();
-		Y.clear();
+		std::vector<double> X_SbKCs;
+		std::vector<double> Y_SbKCs;
+		X_SbKCs.clear();
+		Y_SbKCs.clear();
+		std::vector<double> X_GaAsP;
+		std::vector<double> Y_GaAsP;
+		X_GaAsP.clear();
+		Y_GaAsP.clear();
+		std::vector<double> X_GaAs;
+		std::vector<double> Y_GaAs;
+		X_GaAs.clear();
+		Y_GaAs.clear();
 		double nhitPhoDet(0.0), nhitAerogel(0.0), nel_SbKCs(0.0), nel_GaAsP(0.0), nel_GaAs(0.0);
 
 		int nhits = ahit->get_hitn()->size();
 		for (int j=0;j<nhits;j++) {
-			if(IsPhoton(ahit,j)&&!IsReflection(ahit,j)&&IsOnAerogel(ahit, j)) nhitAerogel++;
+			if(IsPhoton(ahit,j)&&!IsReflection(ahit,j)&&IsOnAerogel(ahit, j)){
+				nhitAerogel++;
+				double photonE = ahit->get_trackE()->at(j);   /// in MeV (GEANT4 default)
+				double wavelength = 1240./(photonE*1.e6);  /// MeV->eV,wavelength in "nm"
+				ntp->hPhotonWL->Fill(wavelength);
+				ntp->hPhotonE->Fill(photonE*1.e6);
+			}
 			if(IsPhoton(ahit,j)&&!IsReflection(ahit,j)&&IsOnPhotonSensor(ahit,j)) {
 				nhitPhoDet++;
 				double out_x(0.), out_y(0.);
@@ -166,28 +180,28 @@ int main(int argc, char **argv)
 
 				double photonE = ahit->get_trackE()->at(j);   /// in MeV (GEANT4 default)
 				double wavelength = 1240./(photonE*1.e6);  /// MeV->eV,wavelength in "nm"
-				ntp->hPhotonWL->Fill(wavelength);
-				ntp->hPhotonE->Fill(photonE*1.e6);
-
 				double QE_SbKCs=mat->extrapQE_SbKCs(wavelength);
 				if(use_SbKCs && QE_SbKCs>rd->Uniform(0.,1.)){
 					nel_SbKCs++;
-					X.push_back(out_x);
-					Y.push_back(out_y);
+					X_SbKCs.push_back(out_x);
+					Y_SbKCs.push_back(out_y);
+					ntp->hPhDetXY_SbKCs->Fill(out_x,out_y);
 				}
 
 				double QE_GaAsP=mat->extrapQE_GaAsP(wavelength);
 				if(use_GaAsP && QE_GaAsP>rd->Uniform(0.,1.)){
 					nel_GaAsP++; 
-					X.push_back(out_x);
-					Y.push_back(out_y);
+					X_GaAsP.push_back(out_x);
+					Y_GaAsP.push_back(out_y);
+					ntp->hPhDetXY_GaAsP->Fill(out_x,out_y);
 				}
 
 				double QE_GaAs=mat->extrapQE_GaAs(wavelength);
 				if(use_GaAs && QE_GaAs>rd->Uniform(0.,1.)){
 					nel_GaAs++;
-					X.push_back(out_x);
-					Y.push_back(out_y);
+					X_GaAs.push_back(out_x);
+					Y_GaAs.push_back(out_y);
+					ntp->hPhDetXY_GaAs->Fill(out_x,out_y);
 				}
 			}
 		}
@@ -198,12 +212,23 @@ int main(int argc, char **argv)
 		ntp->hnPhotonElvsnHits_GaAs->Fill(nhitPhoDet,nel_GaAs);
 
 		///// Identify the rings after photon position smearing
-		ring r;
-		r.FindARing(X,Y);
-		double Rrec=r.GetR();
-		double Xrec=r.GetX();
-		double Yrec=r.GetY();
-		float ontp[18] = {pid_gen,px_gen,py_gen,pz_gen,vx_gen,vy_gen,vz_gen,theta_gen,phi_gen,nhits,nhitAerogel,nhitPhoDet,nel_SbKCs,nel_GaAsP,nel_GaAs,Rrec,Xrec,Yrec};
+		ring *rSbKCs = new ring(X_SbKCs,Y_SbKCs);
+		double Rrec_SbKCs=rSbKCs->GetR();
+		double Xrec_SbKCs=rSbKCs->GetX();
+		double Yrec_SbKCs=rSbKCs->GetY();
+		delete rSbKCs;
+		ring *rGaAsP = new ring(X_GaAsP,Y_GaAsP);
+		double Rrec_GaAsP=rGaAsP->GetR();
+		double Xrec_GaAsP=rGaAsP->GetX();
+		double Yrec_GaAsP=rGaAsP->GetY();
+		delete rGaAsP;
+		ring *rGaAs = new ring(X_GaAs,Y_GaAs);
+		double Rrec_GaAs=rGaAs->GetR();
+		double Xrec_GaAs=rGaAs->GetX();
+		double Yrec_GaAs=rGaAs->GetY();
+		delete rGaAs;
+
+		float ontp[24] = {pid_gen,px_gen,py_gen,pz_gen,vx_gen,vy_gen,vz_gen,theta_gen,phi_gen,nhits,nhitAerogel,nhitPhoDet,nel_SbKCs,nel_GaAsP,nel_GaAs,Rrec_SbKCs,Xrec_SbKCs,Yrec_SbKCs,Rrec_GaAsP,Xrec_GaAsP,Yrec_GaAsP,Rrec_GaAs,Xrec_GaAs,Yrec_GaAs};
 		ntp->hntp->Fill(ontp);
 	}
 

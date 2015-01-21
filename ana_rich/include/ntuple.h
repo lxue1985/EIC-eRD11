@@ -29,6 +29,9 @@ class ntuple
 		TH2D *hnHitAeglPerEvtvsMom;
 		TH2D *hPhDetXY_bfSmear;
 		TH2D *hPhDetXY_afSmear;
+		TH2D *hPhDetXY_SbKCs;
+		TH2D *hPhDetXY_GaAsP;
+		TH2D *hPhDetXY_GaAs;
 		TH1D *hPhotonWL;
 		TH1D *hPhotonE;
 		TH2D *hnPhotonElvsnHits_SbKCs;
